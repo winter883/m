@@ -81,7 +81,7 @@
       inner="<div class='scr'><table class='dtl'><tbody>"+mine.map(function(s){
         var home=(s.hk===x.k), opp=home?s.ag:s.hg, oppK=home?s.ak:s.hk, o=BYKEY[oppK];
         var wr=o?o.wr:null, wrTxt=(wr==null)?"<span class='dim'>—</span>":"<b class='"+(wr>=0.5?"pos":"neg")+"'>"+pc(wr)+"</b>";
-        var dd=o?dots(o.form):"<span class='dim'>—</span>", nn=o?(" <span class='dim'>("+o.n+" kèo)</span>"):"";
+        var dd=o?dots(o.form):"<span class='dim'>—</span>", nn=o?(" <span class='dim'>("+(o.played||0)+" trận · "+o.n+" kèo"+(o.est?"·"+o.est+"ảo":"")+")</span>"):"";
         return "<tr><td>"+hm(s.t)+"</td><td>"+(home?"🏠":"✈")+" vs "+esc(opp)+"</td><td>WR đối thủ "+wrTxt+nn+"</td><td>"+dd+"</td></tr>";
       }).join("")+"</tbody></table></div>";
     }
