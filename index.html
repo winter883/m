@@ -5,10 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Bảng</title>
 <style>
-  :root{--bg:#0e1422;--panel:#141d31;--panel2:#0c1220;--line:#22304a;--txt:#e8edf6;--mut:#8aa0c6;--mut2:#6d7d99;--green:#2ecc71;--red:#e74c3c;}
+  :root{--bg:#0e1422;--panel:#141d31;--panel2:#0c1220;--line:#22304a;--txt:#e8edf6;--mut:#8aa0c6;--mut2:#6d7d99;--green:#2ecc71;--red:#e74c3c;--orange:#e67e22;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system,Roboto,Arial,sans-serif;padding:10px}
-  h1{font-size:16px;margin:0 0 2px}
   .sub{color:var(--mut);font-size:12px;margin-bottom:8px}
   .bar{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
   button{background:#2b3a55;color:var(--txt);border:none;border-radius:8px;padding:8px 12px;font-size:13px}
@@ -17,11 +16,12 @@
   table{min-width:540px;border-collapse:collapse;font-size:13px}
   th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
   th{color:var(--mut);font-weight:600;font-size:11px;position:sticky;top:0;background:var(--panel2);z-index:2}
-  /* Ghim 2 cot dau (# va Gamer) khi cuon ngang */
-  th:nth-child(1),td:nth-child(1){position:sticky;left:0;width:30px;min-width:30px;text-align:left;background:var(--panel2)}
-  th:nth-child(2),td:nth-child(2){position:sticky;left:30px;min-width:96px;text-align:left;background:var(--panel2);box-shadow:1px 0 0 var(--line)}
+  th:nth-child(1),td:nth-child(1){position:sticky;left:0;width:26px;min-width:26px;text-align:left;background:var(--panel2)}
+  th:nth-child(2),td:nth-child(2){position:sticky;left:26px;min-width:96px;text-align:left;background:var(--panel2);box-shadow:1px 0 0 var(--line)}
   td:nth-child(1),td:nth-child(2){z-index:1}
   th:nth-child(1),th:nth-child(2){z-index:3}
+  tr.row{cursor:pointer}
+  tr.det>td{position:static;left:auto;background:#0b1120;text-align:left;white-space:normal}
   td.gm{font-weight:700;color:#cfe0ff}
   .pos{color:var(--green)}.neg{color:var(--red)}.dim{color:var(--mut2)}
   .dots{display:inline-flex;gap:2px}
@@ -31,6 +31,12 @@
   .d-L{background:#0c1220;border-color:#3a4760}
   .d-l{background:linear-gradient(90deg,#3a4760 50%,#0c1220 50%);border-color:#3a4760}
   .d-d{background:#5f6f8c;border-color:#5f6f8c}
+  .det .hd{font-weight:700;color:#cfe0ff;margin:2px 0 4px;font-size:12.5px}
+  .det .scr{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.dtl{min-width:0;width:100%;font-size:12px;margin:0 0 10px}
+  table.dtl th,table.dtl td{position:static;background:transparent;padding:4px 7px;white-space:nowrap}
+  table.dtl th{color:var(--mut);font-weight:600;font-size:10.5px}
+  .ao{color:var(--orange);font-weight:800}
   .err{color:#e74c3c;font-size:13px;padding:14px;line-height:1.6}
   code{background:#0c1220;padding:1px 5px;border-radius:4px;color:#7fd4ff}
 </style>
@@ -52,25 +58,59 @@
   var $=function(id){return document.getElementById(id);};
   function hp(){ var h=(location.hash||"").replace(/^#/,""), o={}; h.split("&").forEach(function(p){var i=p.indexOf("=");if(i>0)o[p.slice(0,i)]=decodeURIComponent(p.slice(i+1));}); return o; }
   var P=hp();
-  if(!P.gist){
-    $("sub").textContent="";
-    $("msg").innerHTML='<div class="err">Thiếu cấu hình. Link phải kèm đuôi:<br><code>#gist=GISTID&file=leaderboard.json</code></div>';
-    return;
-  }
+  if(!P.gist){ $("sub").textContent=""; $("msg").innerHTML='<div class="err">Thiếu cấu hình. Link phải kèm đuôi:<br><code>#gist=GISTID&file=leaderboard.json</code></div>'; return; }
   var FILE=P.file||"leaderboard.json";
   var API="https://api.github.com/gists/"+encodeURIComponent(P.gist);
-  var lastLoad=0;
+  var lastLoad=0, DATA=null, BYKEY={}, FORMN=10;
+  var RESLBL={W:"Thắng",w:"Thắng½",d:"Hòa",l:"Thua½",L:"Thua"};
   function pc(v){return v==null?"—":(v*100).toFixed(1)+"%";}
   function esc(s){return (""+(s==null?"":s)).replace(/[<>&]/g,function(c){return {"<":"&lt;",">":"&gt;","&":"&amp;"}[c];});}
   function ago(ms){ var s=Math.max(0,Math.round((Date.now()-ms)/1000)); if(s<60)return s+" giây trước"; var m=Math.round(s/60); if(m<60)return m+" phút trước"; return Math.round(m/60)+" giờ trước"; }
+  function hm(ms){ if(!ms)return "–"; var d=new Date(ms); return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)+" "+("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2); }
+  function u(v){ return v==null?"–":(v>=0?"+":"")+(+v).toFixed(2); }
   function dots(form){ return '<span class="dots">'+(form||[]).map(function(c){return '<span class="dot d-'+c+'"></span>';}).join("")+'</span>'; }
 
+  function upcomingHTML(x){
+    var now=Date.now(), sched=(DATA&&DATA.sched)||[];
+    var mine=sched.filter(function(s){ return (s.hk===x.k||s.ak===x.k) && (s.t>now-5*60000); });
+    mine.sort(function(a,b){return a.t-b.t;}); mine=mine.slice(0,2);
+    var inner;
+    if(!mine.length){ inner="<div class='dim' style='font-size:11.5px'>— chưa có lịch (chờ cập nhật) —</div>"; }
+    else{
+      inner="<div class='scr'><table class='dtl'><tbody>"+mine.map(function(s){
+        var home=(s.hk===x.k), opp=home?s.ag:s.hg, oppK=home?s.ak:s.hk, o=BYKEY[oppK];
+        var wr=o?o.wr:null, wrTxt=(wr==null)?"<span class='dim'>—</span>":"<b class='"+(wr>=0.5?"pos":"neg")+"'>"+pc(wr)+"</b>";
+        var dd=o?dots(o.form):"<span class='dim'>—</span>", nn=o?(" <span class='dim'>("+o.n+" kèo)</span>"):"";
+        return "<tr><td>"+hm(s.t)+"</td><td>"+(home?"🏠":"✈")+" vs "+esc(opp)+"</td><td>WR đối thủ "+wrTxt+nn+"</td><td>"+dd+"</td></tr>";
+      }).join("")+"</tbody></table></div>";
+    }
+    return "<div class='hd'>⏭ Trận sắp tới của "+esc(x.g)+" (WR + phong độ đối thủ)</div>"+inner;
+  }
+  function keoHTML(x){
+    var det=(x.det||[]).slice().sort(function(a,b){return (b.t||0)-(a.t||0);});
+    if(!det.length) return "";
+    var body=det.map(function(e){
+      var our=e.H?e.fh:e.fa, their=e.H?e.fa:e.fh, rcls=(e.p>0?"pos":e.p<0?"neg":"dim");
+      var src=e.e?"<span class='ao'>ẢO</span>":"<span style='color:#2ecc71'>thật</span>";
+      return "<tr><td>"+hm(e.t)+"</td><td>"+(e.H?"🏠":"✈")+" vs "+esc(e.o)+"</td>"+
+        "<td style='text-align:right'>"+(our==null?"?":our)+":"+(their==null?"?":their)+"</td>"+
+        "<td style='text-align:right'>"+(e.h==null?"–":(e.h>0?"+":"")+e.h)+"</td>"+
+        "<td style='text-align:right'>"+(e.od==null?"–":(+e.od).toFixed(2))+"</td>"+
+        "<td class='"+rcls+"'><b>"+(RESLBL[e.r]||e.r)+"</b></td>"+
+        "<td class='"+rcls+"' style='text-align:right'>"+u(e.p)+"</td>"+
+        "<td style='text-align:center'>"+src+"</td></tr>";
+    }).join("");
+    return "<div class='hd'>"+esc(x.g)+" — "+det.length+" kèo gần nhất (mới nhất trên cùng)</div>"+
+      "<div class='scr'><table class='dtl'><thead><tr><th>Giờ</th><th>Trận</th><th>TS</th><th>Chấp</th><th>Odds</th><th>Kèo</th><th>Lãi</th><th>Nguồn</th></tr></thead><tbody>"+body+"</tbody></table></div>";
+  }
+
   function render(d){
-    var rows=d.rows||[];
+    DATA=d; FORMN=(d.filters&&d.filters.formN)||10;
+    var rows=d.rows||[]; BYKEY={}; rows.forEach(function(x){ BYKEY[x.k]=x; });
     $("tb").innerHTML=rows.length? rows.map(function(x){
       var wrCls=(x.wr!=null&&x.wr>=0.5)?"pos":"neg";
-      return "<tr><td class='dim'>"+x.r+"</td>"+
-        "<td class='gm'>"+esc(x.g)+"</td>"+
+      return "<tr class='row' data-k='"+esc(x.k)+"'><td class='dim'>"+x.r+"</td>"+
+        "<td class='gm'>▸ "+esc(x.g)+"</td>"+
         "<td>"+(x.played||0)+" <span class='dim'>("+x.n+(x.est?"·"+x.est+"ảo":"")+")</span></td>"+
         "<td class='dim'>"+(x.W+x.HW)+"-"+x.PU+"-"+(x.L+x.HL)+"</td>"+
         "<td class='"+wrCls+"'><b>"+pc(x.wr)+"</b></td>"+
@@ -78,23 +118,23 @@
     }).join("") : "<tr><td colspan='6' style='text-align:center;padding:18px;color:#6d7d99'>— trống —</td></tr>";
     var f=d.filters||{};
     $("flt").textContent=(f.todayShift?"ca hôm nay":(f.lastN>0?f.lastN+" kèo gần nhất":"toàn bộ"))+(f.onlyLive?" · đang trong ca":"");
-    $("sub").innerHTML="Cập nhật: <b>"+ago(d.updatedAt)+"</b> · "+(d.count||rows.length)+" gamer";
+    $("sub").innerHTML="Cập nhật: <b>"+ago(d.updatedAt)+"</b> · "+(d.count||rows.length)+" gamer · chạm tên để xem chi tiết";
     $("msg").innerHTML="";
   }
+  $("tb").addEventListener("click", function(ev){
+    var tr=ev.target.closest?ev.target.closest("tr.row"):null; if(!tr)return;
+    var nx=tr.nextElementSibling;
+    if(nx&&nx.classList.contains("det")){ nx.parentNode.removeChild(nx); return; }
+    var x=BYKEY[tr.getAttribute("data-k")]; if(!x)return;
+    var d=document.createElement("tr"); d.className="det";
+    d.innerHTML="<td colspan='6'>"+upcomingHTML(x)+keoHTML(x)+"</td>";
+    tr.parentNode.insertBefore(d, tr.nextSibling);
+  });
   function load(){
     lastLoad=Date.now();
     fetch(API,{cache:"no-store",headers:{"Accept":"application/vnd.github+json"}})
-      .then(function(r){
-        if(r.status===403) throw new Error("GitHub tạm giới hạn truy cập, sẽ tự thử lại");
-        if(!r.ok) throw new Error("HTTP "+r.status+(r.status===404?" (Gist ID sai?)":""));
-        return r.json();
-      })
-      .then(function(g){
-        var f=g.files&&g.files[FILE];
-        if(!f) throw new Error("Gist chưa có file "+FILE+" (máy tính chưa đẩy?)");
-        var d=JSON.parse(f.content);
-        render(d);
-      })
+      .then(function(r){ if(r.status===403) throw new Error("GitHub tạm giới hạn truy cập, sẽ tự thử lại"); if(!r.ok) throw new Error("HTTP "+r.status+(r.status===404?" (Gist ID sai?)":"")); return r.json(); })
+      .then(function(g){ var f=g.files&&g.files[FILE]; if(!f) throw new Error("Gist chưa có file "+FILE+" (máy tính chưa đẩy?)"); render(JSON.parse(f.content)); })
       .catch(function(e){ $("msg").innerHTML='<div class="err">Chưa tải được: '+esc(String(e.message||e))+'</div>'; });
   }
   $("btnR").addEventListener("click", load);
