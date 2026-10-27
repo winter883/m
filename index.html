@@ -37,6 +37,7 @@
   table.dtl th,table.dtl td{position:static;background:transparent;padding:4px 7px;white-space:nowrap}
   table.dtl th{color:var(--mut);font-weight:600;font-size:10.5px}
   .ao{color:var(--orange);font-weight:800}
+  tr.teamhdr>td{position:static;left:auto;background:#16223a;color:#ffe08a;font-weight:800;text-align:left;white-space:normal}
   .err{color:#e74c3c;font-size:13px;padding:14px;line-height:1.6}
   code{background:#0c1220;padding:1px 5px;border-radius:4px;color:#7fd4ff}
 </style>
@@ -107,15 +108,18 @@
   function render(d){
     DATA=d; FORMN=(d.filters&&d.filters.formN)||10;
     var rows=d.rows||[]; BYKEY={}; rows.forEach(function(x){ BYKEY[x.k]=x; });
-    $("tb").innerHTML=rows.length? rows.map(function(x){
+    var byTeam=!!(d.filters&&d.filters.byTeam), prevTeam=null, html="";
+    rows.forEach(function(x){
+      if(byTeam){ var tn=x.team||"Chưa rõ team"; if(tn!==prevTeam){ var cnt=(tn!=="Chưa rõ team"&&x.teamN)?(" ("+x.teamN+" người)"):""; html+="<tr class='teamhdr'><td colspan='6'>🧩 "+esc(tn)+cnt+"</td></tr>"; prevTeam=tn; } }
       var wrCls=(x.wr!=null&&x.wr>=0.5)?"pos":"neg";
-      return "<tr class='row' data-k='"+esc(x.k)+"'><td class='dim'>"+x.r+"</td>"+
+      html+="<tr class='row' data-k='"+esc(x.k)+"'><td class='dim'>"+x.r+"</td>"+
         "<td class='gm'>▸ "+esc(x.g)+"</td>"+
         "<td>"+(x.played||0)+" <span class='dim'>("+x.n+(x.est?"·"+x.est+"ảo":"")+")</span></td>"+
         "<td class='dim'>"+(x.W+x.HW)+"-"+x.PU+"-"+(x.L+x.HL)+"</td>"+
         "<td class='"+wrCls+"'><b>"+pc(x.wr)+"</b></td>"+
         "<td>"+dots(x.form)+"</td></tr>";
-    }).join("") : "<tr><td colspan='6' style='text-align:center;padding:18px;color:#6d7d99'>— trống —</td></tr>";
+    });
+    $("tb").innerHTML=rows.length? html : "<tr><td colspan='6' style='text-align:center;padding:18px;color:#6d7d99'>— trống —</td></tr>";
     var f=d.filters||{};
     $("flt").textContent=(f.todayShift?"ca hôm nay":(f.lastN>0?f.lastN+" kèo gần nhất":"toàn bộ"))+(f.onlyLive?" · đang trong ca":"");
     $("sub").innerHTML="Cập nhật: <b>"+ago(d.updatedAt)+"</b> · "+(d.count||rows.length)+" gamer · chạm tên để xem chi tiết";
