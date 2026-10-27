@@ -36,7 +36,7 @@
 <div class="sub" id="sub">Đang tải…</div>
 <div class="bar">
   <button id="btnR">↻ Làm mới</button>
-  <span class="pill" id="auto">tự refresh 25s</span>
+  <span class="pill" id="auto">tự refresh 90s</span>
   <span class="pill" id="flt"></span>
 </div>
 <div class="wrap"><table id="tbl"><thead><tr>
@@ -49,13 +49,14 @@
   var $=function(id){return document.getElementById(id);};
   function hp(){ var h=(location.hash||"").replace(/^#/,""), o={}; h.split("&").forEach(function(p){var i=p.indexOf("=");if(i>0)o[p.slice(0,i)]=decodeURIComponent(p.slice(i+1));}); return o; }
   var P=hp();
-  if(!P.user||!P.gist){
+  if(!P.gist){
     $("sub").textContent="";
-    $("msg").innerHTML='<div class="err">Thiếu cấu hình. Mở link kèm đuôi:<br><code>#user=TÊN&gist=GISTID&file=leaderboard.json</code><br><br>Lấy đuôi này ở trang Tổng quan trên máy tính → mục “☁ Đồng bộ điện thoại”.</div>';
+    $("msg").innerHTML='<div class="err">Thiếu cấu hình. Link phải kèm đuôi:<br><code>#gist=GISTID&file=leaderboard.json</code><br><br>Lấy đuôi này ở trang Tổng quan trên máy tính → mục “☁ Đồng bộ điện thoại”.</div>';
     return;
   }
   var FILE=P.file||"leaderboard.json";
-  var RAW="https://gist.githubusercontent.com/"+encodeURIComponent(P.user)+"/"+encodeURIComponent(P.gist)+"/raw/"+encodeURIComponent(FILE);
+  var API="https://api.github.com/gists/"+encodeURIComponent(P.gist);
+  var lastLoad=0;
   function pc(v){return v==null?"—":(v*100).toFixed(1)+"%";}
   function esc(s){return (""+(s==null?"":s)).replace(/[<>&]/g,function(c){return {"<":"&lt;",">":"&gt;","&":"&amp;"}[c];});}
   function ago(ms){ var s=Math.max(0,Math.round((Date.now()-ms)/1000)); if(s<60)return s+" giây trước"; var m=Math.round(s/60); if(m<60)return m+" phút trước"; return Math.round(m/60)+" giờ trước"; }
@@ -78,15 +79,25 @@
     $("msg").innerHTML="";
   }
   function load(){
-    fetch(RAW+"?t="+Date.now(),{cache:"no-store"})
-      .then(function(r){ if(!r.ok)throw new Error("HTTP "+r.status); return r.json(); })
-      .then(function(d){ render(d); })
-      .catch(function(e){ $("msg").innerHTML='<div class="err">Không tải được dữ liệu ('+esc(String(e.message||e))+').<br>Kiểm tra Username/Gist ID/tên file, và máy tính đã bật đẩy chưa.</div>'; });
+    lastLoad=Date.now();
+    fetch(API,{cache:"no-store",headers:{"Accept":"application/vnd.github+json"}})
+      .then(function(r){
+        if(r.status===403) throw new Error("GitHub tạm giới hạn truy cập, sẽ tự thử lại");
+        if(!r.ok) throw new Error("HTTP "+r.status+(r.status===404?" (Gist ID sai?)":""));
+        return r.json();
+      })
+      .then(function(g){
+        var f=g.files&&g.files[FILE];
+        if(!f) throw new Error("Gist chưa có file "+FILE+" (máy tính chưa đẩy?)");
+        var d=JSON.parse(f.content);
+        render(d);
+      })
+      .catch(function(e){ $("msg").innerHTML='<div class="err">Chưa tải được: '+esc(String(e.message||e))+'</div>'; });
   }
   $("btnR").addEventListener("click", load);
   load();
-  setInterval(load, 25000);
-  document.addEventListener("visibilitychange",function(){ if(!document.hidden) load(); });
+  setInterval(load, 90000);
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden && (Date.now()-lastLoad>60000)) load(); });
 })();
 </script>
 </body>
