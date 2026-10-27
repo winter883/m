@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Bảng gamer ăn kèo</title>
+<style>
+  :root{--bg:#0e1422;--panel:#141d31;--panel2:#0c1220;--line:#22304a;--txt:#e8edf6;--mut:#8aa0c6;--mut2:#6d7d99;--green:#2ecc71;--red:#e74c3c;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:14px/1.45 -apple-system,Roboto,Arial,sans-serif;padding:10px}
+  h1{font-size:16px;margin:0 0 2px}
+  .sub{color:var(--mut);font-size:12px;margin-bottom:8px}
+  .bar{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  button{background:#2b3a55;color:var(--txt);border:none;border-radius:8px;padding:8px 12px;font-size:13px}
+  .pill{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--mut)}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th:nth-child(1),td:nth-child(1),th:nth-child(2),td:nth-child(2){text-align:left}
+  th{color:var(--mut);font-weight:600;position:sticky;top:0;background:var(--panel2);font-size:11px}
+  td.gm{font-weight:700;color:#cfe0ff}
+  .pos{color:var(--green)}.neg{color:var(--red)}.dim{color:var(--mut2)}
+  .dots{display:inline-flex;gap:2px}
+  .dot{width:9px;height:9px;border-radius:50%;border:1px solid #2a3650}
+  .d-W{background:#2ecc71;border-color:#2ecc71}
+  .d-w{background:linear-gradient(90deg,#2ecc71 50%,#0c1220 50%);border-color:#2ecc71}
+  .d-L{background:#0c1220;border-color:#3a4760}
+  .d-l{background:linear-gradient(90deg,#3a4760 50%,#0c1220 50%);border-color:#3a4760}
+  .d-d{background:#5f6f8c;border-color:#5f6f8c}
+  .err{color:#e74c3c;font-size:13px;padding:14px;line-height:1.6}
+  .wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
+  code{background:#0c1220;padding:1px 5px;border-radius:4px;color:#7fd4ff}
+</style>
+</head>
+<body>
+<h1>📊 Gamer ăn kèo tốt nhất</h1>
+<div class="sub" id="sub">Đang tải…</div>
+<div class="bar">
+  <button id="btnR">↻ Làm mới</button>
+  <span class="pill" id="auto">tự refresh 25s</span>
+  <span class="pill" id="flt"></span>
+</div>
+<div class="wrap"><table id="tbl"><thead><tr>
+  <th>#</th><th>Gamer</th><th>Số kèo</th><th>Kết quả</th><th>WR</th><th>Phong độ</th>
+</tr></thead><tbody id="tb"></tbody></table></div>
+<div id="msg"></div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  function hp(){ var h=(location.hash||"").replace(/^#/,""), o={}; h.split("&").forEach(function(p){var i=p.indexOf("=");if(i>0)o[p.slice(0,i)]=decodeURIComponent(p.slice(i+1));}); return o; }
+  var P=hp();
+  if(!P.user||!P.gist){
+    $("sub").textContent="";
+    $("msg").innerHTML='<div class="err">Thiếu cấu hình. Mở link kèm đuôi:<br><code>#user=TÊN&gist=GISTID&file=leaderboard.json</code><br><br>Lấy đuôi này ở trang Tổng quan trên máy tính → mục “☁ Đồng bộ điện thoại”.</div>';
+    return;
+  }
+  var FILE=P.file||"leaderboard.json";
+  var RAW="https://gist.githubusercontent.com/"+encodeURIComponent(P.user)+"/"+encodeURIComponent(P.gist)+"/raw/"+encodeURIComponent(FILE);
+  function pc(v){return v==null?"—":(v*100).toFixed(1)+"%";}
+  function esc(s){return (""+(s==null?"":s)).replace(/[<>&]/g,function(c){return {"<":"&lt;",">":"&gt;","&":"&amp;"}[c];});}
+  function ago(ms){ var s=Math.max(0,Math.round((Date.now()-ms)/1000)); if(s<60)return s+" giây trước"; var m=Math.round(s/60); if(m<60)return m+" phút trước"; return Math.round(m/60)+" giờ trước"; }
+  function dots(form){ return '<span class="dots">'+(form||[]).map(function(c){return '<span class="dot d-'+c+'"></span>';}).join("")+'</span>'; }
+
+  function render(d){
+    var rows=d.rows||[];
+    $("tb").innerHTML=rows.length? rows.map(function(x){
+      var wrCls=(x.wr!=null&&x.wr>=0.5)?"pos":"neg";
+      return "<tr><td class='dim'>"+x.r+"</td>"+
+        "<td class='gm'>"+esc(x.g)+"</td>"+
+        "<td>"+(x.played||0)+" <span class='dim'>("+x.n+(x.est?"·"+x.est+"ảo":"")+")</span></td>"+
+        "<td class='dim'>"+(x.W+x.HW)+"-"+x.PU+"-"+(x.L+x.HL)+"</td>"+
+        "<td class='"+wrCls+"'><b>"+pc(x.wr)+"</b></td>"+
+        "<td>"+dots(x.form)+"</td></tr>";
+    }).join("") : "<tr><td colspan='6' style='text-align:center;padding:18px;color:#6d7d99'>— trống —</td></tr>";
+    var f=d.filters||{};
+    $("flt").textContent=(f.todayShift?"ca hôm nay":(f.lastN>0?f.lastN+" kèo gần nhất":"toàn bộ"))+(f.onlyLive?" · đang trong ca":"");
+    $("sub").innerHTML="Cập nhật: <b>"+ago(d.updatedAt)+"</b> · "+(d.count||rows.length)+" gamer";
+    $("msg").innerHTML="";
+  }
+  function load(){
+    fetch(RAW+"?t="+Date.now(),{cache:"no-store"})
+      .then(function(r){ if(!r.ok)throw new Error("HTTP "+r.status); return r.json(); })
+      .then(function(d){ render(d); })
+      .catch(function(e){ $("msg").innerHTML='<div class="err">Không tải được dữ liệu ('+esc(String(e.message||e))+').<br>Kiểm tra Username/Gist ID/tên file, và máy tính đã bật đẩy chưa.</div>'; });
+  }
+  $("btnR").addEventListener("click", load);
+  load();
+  setInterval(load, 25000);
+  document.addEventListener("visibilitychange",function(){ if(!document.hidden) load(); });
+})();
+</script>
+</body>
+</html>
