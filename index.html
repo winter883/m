@@ -13,21 +13,25 @@
   .bar{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
   button{background:#2b3a55;color:var(--txt);border:none;border-radius:8px;padding:8px 12px;font-size:13px}
   .pill{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:11px;color:var(--mut)}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
-  th:nth-child(1),td:nth-child(1),th:nth-child(2),td:nth-child(2){text-align:left}
-  th{color:var(--mut);font-weight:600;position:sticky;top:0;background:var(--panel2);font-size:11px}
+  .wrap{overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:10px}
+  table{min-width:540px;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th{color:var(--mut);font-weight:600;font-size:11px;position:sticky;top:0;background:var(--panel2);z-index:2}
+  /* Ghim 2 cot dau (# va Gamer) khi cuon ngang */
+  th:nth-child(1),td:nth-child(1){position:sticky;left:0;width:30px;min-width:30px;text-align:left;background:var(--panel2)}
+  th:nth-child(2),td:nth-child(2){position:sticky;left:30px;min-width:96px;text-align:left;background:var(--panel2);box-shadow:1px 0 0 var(--line)}
+  td:nth-child(1),td:nth-child(2){z-index:1}
+  th:nth-child(1),th:nth-child(2){z-index:3}
   td.gm{font-weight:700;color:#cfe0ff}
   .pos{color:var(--green)}.neg{color:var(--red)}.dim{color:var(--mut2)}
   .dots{display:inline-flex;gap:2px}
-  .dot{width:9px;height:9px;border-radius:50%;border:1px solid #2a3650}
+  .dot{width:8px;height:8px;border-radius:50%;border:1px solid #2a3650}
   .d-W{background:#2ecc71;border-color:#2ecc71}
   .d-w{background:linear-gradient(90deg,#2ecc71 50%,#0c1220 50%);border-color:#2ecc71}
   .d-L{background:#0c1220;border-color:#3a4760}
   .d-l{background:linear-gradient(90deg,#3a4760 50%,#0c1220 50%);border-color:#3a4760}
   .d-d{background:#5f6f8c;border-color:#5f6f8c}
   .err{color:#e74c3c;font-size:13px;padding:14px;line-height:1.6}
-  .wrap{overflow:auto;border:1px solid var(--line);border-radius:10px}
   code{background:#0c1220;padding:1px 5px;border-radius:4px;color:#7fd4ff}
 </style>
 </head>
@@ -51,7 +55,7 @@
   var P=hp();
   if(!P.gist){
     $("sub").textContent="";
-    $("msg").innerHTML='<div class="err">Thiếu cấu hình. Link phải kèm đuôi:<br><code>#gist=GISTID&file=leaderboard.json</code><br><br>Lấy đuôi này ở trang Tổng quan trên máy tính → mục “☁ Đồng bộ điện thoại”.</div>';
+    $("msg").innerHTML='<div class="err">Thiếu cấu hình. Link phải kèm đuôi:<br><code>#gist=GISTID&file=leaderboard.json</code></div>';
     return;
   }
   var FILE=P.file||"leaderboard.json";
