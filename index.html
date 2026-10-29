@@ -38,6 +38,7 @@
   table.dtl th{color:var(--mut);font-weight:600;font-size:10.5px}
   .ao{color:var(--orange);font-weight:800}
   tr.teamhdr>td{position:static;left:auto;background:#16223a;color:#ffe08a;font-weight:800;text-align:left;white-space:normal}
+  .lggrp{display:inline-flex;gap:2px;align-items:center;padding:0 2px 2px}
   .err{color:#e74c3c;font-size:13px;padding:14px;line-height:1.6}
   code{background:#0c1220;padding:1px 5px;border-radius:4px;color:#7fd4ff}
 </style>
@@ -69,7 +70,18 @@
   function ago(ms){ var s=Math.max(0,Math.round((Date.now()-ms)/1000)); if(s<60)return s+" giây trước"; var m=Math.round(s/60); if(m<60)return m+" phút trước"; return Math.round(m/60)+" giờ trước"; }
   function hm(ms){ if(!ms)return "–"; var d=new Date(ms); return ("0"+d.getHours()).slice(-2)+":"+("0"+d.getMinutes()).slice(-2)+" "+("0"+d.getDate()).slice(-2)+"/"+("0"+(d.getMonth()+1)).slice(-2); }
   function u(v){ return v==null?"–":(v>=0?"+":"")+(+v).toFixed(2); }
-  function dots(form){ return '<span class="dots">'+(form||[]).map(function(c){return '<span class="dot d-'+c+'"></span>';}).join("")+'</span>'; }
+  var LGC=["rgba(127,212,255,.3)","rgba(255,170,60,.3)"];
+  function dots(form, formLg){
+    form=form||[]; formLg=formLg||[];
+    var html='<span class="dots">', i=0, ri=0;
+    while(i<form.length){
+      var g=formLg[i], j=i; while(j<form.length && formLg[j]===g) j++;
+      html+='<span class="lggrp" style="border-bottom:1px solid '+LGC[ri%2]+'">'; ri++;
+      for(var k=i;k<j;k++){ html+='<span class="dot d-'+form[k]+'"></span>'; }
+      html+='</span>'; i=j;
+    }
+    return html+'</span>';
+  }
 
   function upcomingHTML(x){
     var now=Date.now(), sched=(DATA&&DATA.sched)||[];
@@ -81,7 +93,7 @@
       inner="<div class='scr'><table class='dtl'><tbody>"+mine.map(function(s){
         var home=(s.hk===x.k), opp=home?s.ag:s.hg, oppK=home?s.ak:s.hk, o=BYKEY[oppK];
         var wr=o?o.wr:null, wrTxt=(wr==null)?"<span class='dim'>—</span>":"<b class='"+(wr>=0.5?"pos":"neg")+"'>"+pc(wr)+"</b>";
-        var dd=o?dots(o.form):"<span class='dim'>—</span>", nn=o?(" <span class='dim'>("+(o.played||0)+" trận · "+o.n+" kèo"+(o.est?"·"+o.est+"ảo":"")+")</span>"):"";
+        var dd=o?dots(o.form,o.formLg):"<span class='dim'>—</span>", nn=o?(" <span class='dim'>("+(o.played||0)+" trận · "+o.n+" kèo"+(o.est?"·"+o.est+"ảo":"")+")</span>"):"";
         return "<tr><td>"+hm(s.t)+"</td><td>"+(home?"🏠":"✈")+" vs "+esc(opp)+"</td><td>WR đối thủ "+wrTxt+nn+"</td><td>"+dd+"</td></tr>";
       }).join("")+"</tbody></table></div>";
     }
@@ -117,7 +129,7 @@
         "<td>"+(x.played||0)+" <span class='dim'>("+x.n+(x.est?"·"+x.est+"ảo":"")+")</span></td>"+
         "<td class='dim'>"+(x.W+x.HW)+"-"+x.PU+"-"+(x.L+x.HL)+"</td>"+
         "<td class='"+wrCls+"'><b>"+pc(x.wr)+"</b></td>"+
-        "<td>"+dots(x.form)+"</td></tr>";
+        "<td>"+dots(x.form,x.formLg)+"</td></tr>";
     });
     $("tb").innerHTML=rows.length? html : "<tr><td colspan='6' style='text-align:center;padding:18px;color:#6d7d99'>— trống —</td></tr>";
     var f=d.filters||{};
